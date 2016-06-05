@@ -37,11 +37,11 @@ void* Threading(void* ptr) {
 	Data *data = (Data *)ptr;
 
 	mu.lock();
-	int id = data->person[state].ID;
+	int id = data->person[state].ID;		//told to every thread it's responce id
 	state++;
 	mu.unlock();
 
-	while(state != 31)
+	while(state != 31)					//wait until every thread been told
 		;
 
 	while(1)
@@ -61,7 +61,9 @@ void* Threading(void* ptr) {
 		mu.unlock();
    	}
    mu.lock();
-   cout<<id<<" : "<<data->count[id]<<endl;
+
+
+   cout<<id<<" : "<<data->count[id]<<endl;			//count how many time the thread be in lock
    mu.unlock();
    return NULL;
 }
@@ -76,7 +78,7 @@ int main( ) {
 	for (int i = 0; i < 31; ++i)
 	{
 		data.person[i].ID = i;
-		data.count[i] = 0;
+		data.count[i] = 0;	
 	}
 	data.numOfTutor = 100;
 	data.now = 0;
