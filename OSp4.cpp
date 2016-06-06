@@ -19,7 +19,7 @@ mutex mutex2;
 	int tutring;
 };*/
 
-struct Person
+struct Student
 {
 	int questionTime;
 	int ID;
@@ -29,7 +29,7 @@ struct Data {
 	//TimeLine timeline[10000];
 	int tutoring;
 	vector<int> waiting;
-	Person person[31];
+	Student student[31];
    	int numOfTutor;
    	int count[31];
 };
@@ -43,8 +43,8 @@ void* Threading(void* ptr) {
 	Data *data = (Data *)ptr;
 
 	mutex1.lock();
-	int id = data->person[state].ID;		//told to every thread it's responce person
-	Person *me = &data->person[id];
+	int id = data->student[state].ID;		//told to every thread it's responce Student
+	Student *me = &data->student[id];
 
 	state++;
 	mutex1.unlock();
@@ -68,13 +68,20 @@ void* Threading(void* ptr) {
 				if (me->questionTime == now)
 				{
 					if (data->tutoring == 0)
+					{
 						data->tutoring = id;
+						me->questionTime = rand()%30 + now + 3;
+					}
 					else if (data->waiting.size()<3)
+					{
 						data->waiting.push_back(id);
+						me->questionTime = rand()%30 + 3*(data->waiting.size()+1) + now;
+					}
 					else
 						me->questionTime += 5;
+
 				}
-				// check the personal schedual first
+				// check the Studental schedual first
 				data->numOfTutor--;
 			}
 			else
@@ -134,12 +141,12 @@ int main( ) {
 
 	for (int i = 0; i < 31; ++i)
 	{
-		data.person[i].ID = i;
-		data.person[i].questionTime = 0;
+		data.student[i].ID = i;
+		data.student[i].questionTime = 0;
 		data.count[i] = 0;	
 	}
 
-	data.numOfTutor = 200;
+	//data.numOfTutor = 200;
 
 	for(int i = 0; i < 31; )
 		 pthread_create (&thread1[i++], NULL, Threading, &data); 
