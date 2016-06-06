@@ -28,7 +28,7 @@ struct Person
 struct Data {
 	//TimeLine timeline[10000];
 	int tutoring;
-	queue<int> waiting;
+	vector<int> waiting;
 	Person person[31];
    	int numOfTutor;
    	int count[31];
@@ -55,7 +55,7 @@ void* Threading(void* ptr) {
 	while(1)
 	{
 		mutex1.lock();
-		if (term < 31)
+		if (term < 30)					//Student
 		{
 			if (data->numOfTutor>=0)
 			{
@@ -63,14 +63,14 @@ void* Threading(void* ptr) {
 
 				if (me->questionTime == 0)
 					me->questionTime = rand()%31 + now;	 	//	random asking time
-				//cout<<id<<" questionTime is "<<me->questionTime<<endl;
-				//data->count[id]++;
+				cout<<id<<" questionTime is "<<me->questionTime<<endl;
+				data->count[id]++;
 				if (me->questionTime == now)
 				{
 					if (data->tutoring == 0)
 						data->tutoring = id;
 					else if (data->waiting.size()<3)
-						data->waiting.push(id);
+						data->waiting.push_back(id);
 					else
 						me->questionTime += 5;
 				}
@@ -82,14 +82,33 @@ void* Threading(void* ptr) {
 				mutex1.unlock();
 				break;
 			}
+			term++;
+		}
+		else									//TA
+		{
+			cout<<"______________________________"<<endl;
+			cout<<now<<": "<<endl;
+			if (data->tutoring == 0)
+				cout<<"Nap . . .. "<<endl;
+			else
+			{
+				cout<<data->tutoring<<" is tutoring."<<endl;
+				if (data->waiting.size()>0)
+					for (int i = 0; i < data->waiting.size(); ++i)
+						cout<<data->waiting[i]<<" is waiting"<<endl;
+					
+				now++;
+				term = 0;
+			}
+			cout<<"______________________________"<<endl;
 		}
 
 		mutex1.unlock();
    	}
 
-   	mutex1.lock();
-   cout<<id<<" : "<<data->count[id]<<endl;			//count how many time the thread be in lock
-   mutex1.unlock();
+   	//mutex1.lock();
+   //cout<<id<<" : "<<data->count[id]<<endl;			//count how many time the thread be in lock
+   //mutex1.unlock();
    return NULL;
 }
 
@@ -120,7 +139,7 @@ int main( ) {
 		data.count[i] = 0;	
 	}
 
-	data.numOfTutor = 30;
+	data.numOfTutor = 200;
 
 	for(int i = 0; i < 31; )
 		 pthread_create (&thread1[i++], NULL, Threading, &data); 
