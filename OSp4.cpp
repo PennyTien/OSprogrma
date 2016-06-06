@@ -8,7 +8,8 @@
 #include <vector>
 using namespace std;
  
-mutex mu;
+mutex mutex1;
+mutex mutex2;
 
 struct TimeLine
 {
@@ -20,12 +21,12 @@ struct TimeLine
 struct Person
 {
 	int ID;
-	vector<int> schedual;
+	int schedual[100000];
 };
 
 struct Data {
 	int now;
-	vector<TimeLine> timeline;
+	TimeLine timeline[100000];
 	Person person[31];
    	int numOfTutor;
    	int count[31];
@@ -36,8 +37,13 @@ int state = 0;
 void* Threading(void* ptr) {
 	Data *data = (Data *)ptr;
 
-	mu.lock();
-	int id = data->person[state].ID;		//told to every thread it's responce id
+	mutex.lock();
+	int *now = &data->now;
+	TimeLine *timeline = data->timeline;
+
+	int id = data->person[state].ID;		//told to every thread it's responce person
+	Person *me = &data->person[id];
+
 	state++;
 	mu.unlock();
 
@@ -49,9 +55,26 @@ void* Threading(void* ptr) {
 		mu.lock();
 		if (data->numOfTutor>=0)
 		{
-			cout<<data->numOfTutor<<": "<<pthread_self()<<": "<<id<<endl;
-			data->count[id]++;
-			data->numOfTutor--;
+			//stdent routine section
+			int randomtime = rand()%31 + *now;	 	//	random asking time
+			// check the personal schedual first
+
+			if (data->timeline[data->now].tutring == 0)	//if ta is naping
+			{
+				//just get in.
+				//tutor is your id
+				//update personal schedual
+				//remember its 3 second
+			}
+			else if (data->timeline[data->now].waiting.size()<3)// the waiting line
+			{
+				//update personal scheual, timline, 
+				//
+			}
+			else if (data->timeline[data->now].waiting.size()>=3)
+			{
+				//personal schedual from now to now+5 is -1
+			}
 		}
 		else
 		{
@@ -60,12 +83,26 @@ void* Threading(void* ptr) {
 		}
 		mu.unlock();
    	}
-   mu.lock();
+   mutex.lock();
 
 
    cout<<id<<" : "<<data->count[id]<<endl;			//count how many time the thread be in lock
    mu.unlock();
    return NULL;
+}
+
+void* teachingAssistant(void* ptr) 
+{
+	mutex2.lock();
+	while(sum!=15)
+		;
+	if  (sum == 15)
+	{
+		cout<<"middle~~"<<endl;
+		mutex2.unlock();
+	}
+	
+    return NULL;
 }
  
 int main( ) {
@@ -83,8 +120,9 @@ int main( ) {
 	data.numOfTutor = 100;
 	data.now = 0;
 
-	for (int i = 0; i < 31; )
-		pthread_create (&thread1[i++], NULL, Threading, &data);  
+	pthread_create (&thread1[0], NULL, teachingAssistant, &data); 
+	for (int i = 1; i < 31; )
+		 pthread_create (&thread1[i++], NULL, Threading, &data); 
 	
 
 
