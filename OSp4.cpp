@@ -14,6 +14,8 @@ mutex mutex2;
 
 /*剩下
 1.waiting 只有一入隊伍時cout，目前每秒 cout 一次
+	想改將 vector<int> waiting 改ㄓㄥ vector<Waiting> waiting
+	waiting 裡有 int id 以及 int arriveTime
 2.助教上廁所
 3.助教兩位
 4.排版*/
@@ -46,6 +48,8 @@ int state = 0;
 int count = 0;
 int term = 0;
 int temp = 2;
+
+void printTime(int second);
  
 void* Threading(void* ptr) {
 	Data *data = (Data *)ptr;
@@ -112,7 +116,8 @@ void* Threading(void* ptr) {
 			{
 				if (temp == 2)
 				{
-					cout<<now<<": "<<data->tutoring<<" is tutoring."<<endl;
+					printTime(now);
+					cout<<": "<<data->tutoring<<" is tutoring."<<endl;
 					data->student[data->tutoring].questionFrequency++;
 					data->numOfTutor--;
 					temp--;
@@ -121,14 +126,16 @@ void* Threading(void* ptr) {
 					temp--;
 				else
 				{
-					cout<<now<<": "<<data->tutoring<<"is finished. "<<endl;
+					printTime(now);
+					cout<<": "<<data->tutoring<<"is finished. "<<endl;
 					temp = 2;
 					if (data->waiting.size()>0)
 					{
 						data->tutoring = data->waiting.front();
 						vector<int>::iterator it = data->waiting.begin();
 						data->waiting.erase(it);
-						cout<<now<<": "<<data->tutoring<<" is tutoring."<<endl;
+						printTime(now);
+						cout<<": "<<data->tutoring<<" is tutoring."<<endl;
 						data->student[data->tutoring].questionFrequency++;
 						data->numOfTutor--;
 						temp--;
@@ -138,7 +145,10 @@ void* Threading(void* ptr) {
 
 				if (data->waiting.size()>0)
 					for (int i = 0; i < data->waiting.size(); ++i)
-						cout<<now<<": "<<data->waiting[i]<<" is waiting"<<endl;
+					{
+						printTime(now);
+						cout<<": "<<data->waiting[i]<<" is waiting"<<endl;
+					}
 				
 				now++;
 				term = 0;
@@ -194,3 +204,42 @@ int main( ) {
 
     return 0;
 }
+
+void printTime(int second)
+{
+	if (second<60)
+	{
+		cout<<"12:00:";
+		if (second<10)
+			cout<<0<<second;
+		else
+			cout<<second;
+	}
+	else if (second < 3600)
+	{
+		int minute = second/60;
+		int s = second%60;
+		cout<<"12:";
+		if (minute<10)
+			cout<<0<<minute<<":";
+		else
+			cout<<minute<<":";
+
+		if (s<10)
+			cout<<0<<s;
+		else
+			cout<<s;
+	}
+}
+
+
+
+
+
+
+
+
+
+
+
+
