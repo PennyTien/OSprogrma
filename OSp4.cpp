@@ -12,6 +12,12 @@ using namespace std;
 mutex mutex1;
 mutex mutex2;
 
+/*剩下
+1.waiting 只有一入隊伍時cout，目前每秒 cout 一次
+2.助教上廁所
+3.助教兩位
+4.排版*/
+
 /*struct TimeLine
 {
 	int time;
@@ -22,6 +28,7 @@ mutex mutex2;
 struct Student
 {
 	int questionTime;
+	int questionFrequency;
 	int ID;
 };
 
@@ -38,6 +45,7 @@ int now;
 int state = 0;
 int count = 0;
 int term = 0;
+int temp = 2;
  
 void* Threading(void* ptr) {
 	Data *data = (Data *)ptr;
@@ -61,9 +69,12 @@ void* Threading(void* ptr) {
 			{
 				//stdent routine section
 
-				if (me->questionTime == 0)
+				if (me->questionTime == 0 && me->questionFrequency == 0)
 					me->questionTime = rand()%31 + now;	 	//	random asking time
-				cout<<id<<" questionTime is "<<me->questionTime<<endl;
+				else if (me->questionTime == 0 && me->questionFrequency != 0)
+					me->questionTime = (rand()%21+10) + now;
+
+				//cout<<id<<" questionTime is "<<me->questionTime<<endl;
 				data->count[id]++;
 				if (me->questionTime == now)
 				{
@@ -82,7 +93,7 @@ void* Threading(void* ptr) {
 
 				}
 				// check the Studental schedual first
-				data->numOfTutor--;
+				//data->numOfTutor--;
 			}
 			else
 			{
@@ -94,16 +105,41 @@ void* Threading(void* ptr) {
 		else									//TA
 		{
 			cout<<"______________________________"<<endl;
-			cout<<now<<": "<<endl;
+			//cout<<now<<": "<<endl;
 			if (data->tutoring == 0)
 				cout<<"Nap . . .. "<<endl;
 			else
 			{
-				cout<<data->tutoring<<" is tutoring."<<endl;
+				if (temp == 2)
+				{
+					cout<<now<<": "<<data->tutoring<<" is tutoring."<<endl;
+					data->student[data->tutoring].questionFrequency++;
+					data->numOfTutor--;
+					temp--;
+				}
+				else if (temp > 0)
+					temp--;
+				else
+				{
+					cout<<now<<": "<<data->tutoring<<"is finished. "<<endl;
+					temp = 2;
+					if (data->waiting.size()>0)
+					{
+						data->tutoring = data->waiting.front();
+						vector<int>::iterator it = data->waiting.begin();
+						data->waiting.erase(it);
+						cout<<now<<": "<<data->tutoring<<" is tutoring."<<endl;
+						data->student[data->tutoring].questionFrequency++;
+						data->numOfTutor--;
+						temp--;
+					}
+				}
+
+
 				if (data->waiting.size()>0)
 					for (int i = 0; i < data->waiting.size(); ++i)
-						cout<<data->waiting[i]<<" is waiting"<<endl;
-					
+						cout<<now<<": "<<data->waiting[i]<<" is waiting"<<endl;
+				
 				now++;
 				term = 0;
 			}
@@ -143,10 +179,11 @@ int main( ) {
 	{
 		data.student[i].ID = i;
 		data.student[i].questionTime = 0;
+		data.student[i].questionFrequency = 0;
 		data.count[i] = 0;	
 	}
 
-	//data.numOfTutor = 200;
+	data.numOfTutor = 60;
 
 	for(int i = 0; i < 31; )
 		 pthread_create (&thread1[i++], NULL, Threading, &data); 
