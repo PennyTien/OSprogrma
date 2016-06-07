@@ -34,10 +34,14 @@ struct Student
 	int ID;
 };
 
+struct WaitingLine{
+	int ID;
+	int arriveTime;
+};
+
 struct Data {
-	//TimeLine timeline[10000];
 	int tutoring;
-	vector<int> waiting;
+	vector<WaitingLine> waiting;
 	Student student[31];
    	int numOfTutor;
    	int count[31];
@@ -67,16 +71,16 @@ void* Threading(void* ptr) {
 	while(1)
 	{
 		mutex1.lock();
-		if (term < 30)					//Student
+		if (data->numOfTutor<=60)
 		{
-			if (data->numOfTutor>=0)
+			if ( id != 30)										//Student
 			{
 				//stdent routine section
 
 				if (me->questionTime == 0 && me->questionFrequency == 0)
-					me->questionTime = rand()%31 + now;	 	//	random asking time
+					me->questionTime = rand()%31 + now;	 	//	first asking
 				else if (me->questionTime == 0 && me->questionFrequency != 0)
-					me->questionTime = (rand()%21+10) + now;
+					me->questionTime = (rand()%21+10) + now; //rand()%21+10 = 10 - 30 sec
 
 				//cout<<id<<" questionTime is "<<me->questionTime<<endl;
 				data->count[id]++;
@@ -89,7 +93,11 @@ void* Threading(void* ptr) {
 					}
 					else if (data->waiting.size()<3)
 					{
-						data->waiting.push_back(id);
+						WaitingLine temp;
+						temp.ID = id;
+						temp.arriveTime = now;
+						data->waiting.push_back(temp);
+
 						me->questionTime = rand()%30 + 3*(data->waiting.size()+1) + now;
 					}
 					else
@@ -99,63 +107,65 @@ void* Threading(void* ptr) {
 				// check the Studental schedual first
 				//data->numOfTutor--;
 			}
-			else
+			else													//TA
 			{
-				mutex1.unlock();
-				break;
-			}
-			term++;
-		}
-		else									//TA
-		{
-			cout<<"______________________________"<<endl;
-			//cout<<now<<": "<<endl;
-			if (data->tutoring == 0)
-				cout<<"Nap . . .. "<<endl;
-			else
-			{
-				if (temp == 2)
+				//cout<<"______________________________"<<endl;
+				//cout<<now<<": "<<endl;
+				if (data->tutoring == 0)
 				{
 					printTime(now);
-					cout<<": "<<data->tutoring<<" is tutoring."<<endl;
-					data->student[data->tutoring].questionFrequency++;
-					data->numOfTutor--;
-					temp--;
+					cout<<"-TA: Napping"<<endl;
 				}
-				else if (temp > 0)
-					temp--;
 				else
 				{
-					printTime(now);
-					cout<<": "<<data->tutoring<<"is finished. "<<endl;
-					temp = 2;
-					if (data->waiting.size()>0)
+					if (temp == 2)
 					{
-						data->tutoring = data->waiting.front();
-						vector<int>::iterator it = data->waiting.begin();
-						data->waiting.erase(it);
 						printTime(now);
-						cout<<": "<<data->tutoring<<" is tutoring."<<endl;
+						cout<<"-Student"<<data->tutoring<<": Asking--"<<data->numOfTutor<<endl;
 						data->student[data->tutoring].questionFrequency++;
-						data->numOfTutor--;
+						data->numOfTutor++;
 						temp--;
 					}
-				}
-
-
-				if (data->waiting.size()>0)
-					for (int i = 0; i < data->waiting.size(); ++i)
+					else if (temp > 0)
+						temp--;
+					else
 					{
 						printTime(now);
-						cout<<": "<<data->waiting[i]<<" is waiting"<<endl;
+						cout<<"-Student"<<data->tutoring<<" Exit to programming"<<endl;
+						temp = 2;
+						if (data->waiting.size()>0)
+						{
+							data->tutoring = data->waiting.front().ID;
+							vector<WaitingLine>::iterator it = data->waiting.begin();
+							data->waiting.erase(it);
+							printTime(now);
+							cout<<"-Student"<<data->tutoring<<": Asking--"<<data->numOfTutor<<endl;
+							data->student[data->tutoring].questionFrequency++;
+							data->numOfTutor++;
+							temp--;
+						}
 					}
-				
-				now++;
-				term = 0;
-			}
-			cout<<"______________________________"<<endl;
-		}
 
+
+					if (data->waiting.size()>0)
+						for (int i = 0; i < data->waiting.size(); ++i)
+							if (data->waiting[i].arriveTime == now)
+							{
+								printTime(now);
+								cout<<"-Student"<<data->waiting[i].ID<<" Sitting #"<<i+1<<endl;
+							}
+					term = 0;
+				}
+				sleep(1);
+				now++;
+			}
+
+		}
+		else
+		{
+			mutex1.unlock();
+			break;
+		}
 		mutex1.unlock();
    	}
 
@@ -193,7 +203,7 @@ int main( ) {
 		data.count[i] = 0;	
 	}
 
-	data.numOfTutor = 60;
+	data.numOfTutor = 0;
 
 	for(int i = 0; i < 31; )
 		 pthread_create (&thread1[i++], NULL, Threading, &data); 
@@ -205,41 +215,25 @@ int main( ) {
     return 0;
 }
 
-void printTime(int second)
+void printTime(int now)
 {
-	if (second<60)
-	{
-		cout<<"12:00:";
-		if (second<10)
-			cout<<0<<second;
-		else
-			cout<<second;
-	}
-	else if (second < 3600)
-	{
-		int minute = second/60;
-		int s = second%60;
-		cout<<"12:";
-		if (minute<10)
-			cout<<0<<minute<<":";
-		else
-			cout<<minute<<":";
+	int hour = now / 3600;
+	int minute = (now / 60) % 60 ;
+	int second = now % 60;
 
-		if (s<10)
-			cout<<0<<s;
-		else
-			cout<<s;
-	}
+	
+	cout<<12+hour<<":";
+
+	if (minute < 10)
+		cout<<0<<minute<<":";
+	else
+		cout<<minute<<":";
+
+	if (second<10)
+		cout<<0<<second;
+	else
+		cout<<second;
+
 }
-
-
-
-
-
-
-
-
-
-
 
 
