@@ -13,7 +13,6 @@ pthread_mutex_t mut = PTHREAD_MUTEX_INITIALIZER;
 
 
 /*剩下
-1.助教上廁所
 2.助教兩位
 */
 
@@ -38,6 +37,8 @@ struct Data {
 	Student student[31];
    	int numOfTutor;
    	int count[31];
+   	int taWC;
+   	bool busy;
 };
 
 int now;
@@ -80,7 +81,7 @@ void* Threading(void* ptr) {
 
 					//the time this student go to ask question
 					if (me->questionTime == -1 && me->questionFrequency == 0)
-						me->questionTime = rand()%31 + now;	 	//	first asking
+						me->questionTime = rand()%31 + 2;	 	//	first asking
 					else if (me->questionTime == -1 && me->questionFrequency != 0)
 						me->questionTime = (rand()%21+10) + now; 	//not the first time asking.
 
@@ -96,7 +97,7 @@ void* Threading(void* ptr) {
 							//！突然想到，questionTime 的初始化得在問完問題再做！
 							//me->questionFrequency++;
 						}
-						else if (data->waiting.size()<3)
+						else if (data->waiting.size()<3 )
 						{
 							WaitingLine temp;				//add to waiting line
 							temp.ID = id;
@@ -116,62 +117,91 @@ void* Threading(void* ptr) {
 				{
 					if (data->tutoring == -1)
 					{
-						printTime(now);
-						cout<<"-TA: Napping"<<endl;
+						if (!data->busy)
+						{	
+							data->busy = rand()%2;	
+							if (!data->busy && data->taWC == -1)
+							{
+								printTime(now);
+								data->taWC = now+4;
+								data->tutoring = -2;
+								cout<<"-TA: go to WC"<<endl;
+							}
+							else
+							{
+								printTime(now);
+								cout<<"-TA: Napping"<<endl;
+							}
+						}
+							
 						//這裏做廁所時間 rand ％2來決定是否廁所
 						//好像得做一個開關先在助教沒空得排隊也
 					}
 					else
 					{
-						if (temp == 2)//The first second the student tutoring.
+						if(data->tutoring != -2 || data->taWC == now )
 						{
-							//跟下面重複想辦法合併
-							tutor(data->tutoring);
-							/*printTime(now);
-							cout<<"-Student";
-							printIdentity(data->tutoring);
-							cout<<": Asking--"<<data->numOfTutor<<endl;*/
-
-							data->numOfTutor++;
-							temp--;
-						}
-						else if (temp > 0)//The second second the student tutoring.
-							temp--;
-						else				//The thirsd second the student tutoring.
-						{
-							/*printTime(now);
-							cout<<"-Student";
-							printIdentity(data->tutoring);
-							cout<<": Exit to programming"<<endl;*/
-							leave(data->tutoring);
-
-							data->student[data->tutoring].questionFrequency++;
-							//初始化
-							data->student[data->tutoring].questionTime = -1;
-							temp = 2;
-							if (data->waiting.size()>0)
+							data->busy = false;
+							data->taWC = -1;
+							if (temp == 2 && data->tutoring!= -2)//The first second the student tutoring.
 							{
-								data->tutoring = data->waiting.front().ID;
-								vector<WaitingLine>::iterator it = data->waiting.begin();
-								data->waiting.erase(it);
-
+								//跟下面重複想辦法合併
 								tutor(data->tutoring);
 								/*printTime(now);
 								cout<<"-Student";
 								printIdentity(data->tutoring);
 								cout<<": Asking--"<<data->numOfTutor<<endl;*/
 
-
 								data->numOfTutor++;
 								temp--;
 							}
-							else
-								data->tutoring = -1;
+							else if (temp > 0 && data->tutoring!= -2)//The second second the student tutoring.
+								temp--;
+							else				//The thirsd second the student tutoring.
+							{
+								/*printTime(now);
+								cout<<"-Student";
+								printIdentity(data->tutoring);
+								cout<<": Exit to programming"<<endl;*/
+								if (data->tutoring != -2)
+								{
+									leave(data->tutoring);
+
+									data->student[data->tutoring].questionFrequency++;
+									//初始化
+									data->student[data->tutoring].questionTime = -1;
+								}
+
+								if (data->waiting.size()>0)
+								{
+									if (data->tutoring == -2)
+									{
+										printTime(now);
+										cout<<"-TA: back from WC"<<endl;
+									}
+									temp = 2;
+									data->tutoring = data->waiting.front().ID;
+									vector<WaitingLine>::iterator it = data->waiting.begin();
+									data->waiting.erase(it);
+
+									tutor(data->tutoring);
+									/*printTime(now);
+									cout<<"-Student";
+									printIdentity(data->tutoring);
+									cout<<": Asking--"<<data->numOfTutor<<endl;*/
+
+
+									data->numOfTutor++;
+									temp--;
+								}
+								else
+									data->tutoring = -1;
+							}
 						}
 
 
 						if (data->waiting.size()>0)
-							for (int i = 0; i < data->waiting.size(); ++i)
+							for (size_t i = 0; i < data->waiting.size(); ++i)
 								if (data->waiting[i].arriveTime == now)
 								{
 									printTime(now);
@@ -223,7 +253,7 @@ int main( )
 	Data data;
 	
 	pthread_t *thread1 = new pthread_t[31] ;
-
+	srand(clock());
 	for (int i = 0; i < 31; ++i)
 	{
 		data.student[i].ID = i;
@@ -234,6 +264,8 @@ int main( )
 
 	data.numOfTutor = 0;
 	data.tutoring = -1;
+	data.taWC = -1;
+	data.busy = false;
 
 	for(int i = 0; i < 31; )
 		 pthread_create (&thread1[i++], NULL, Threading, &data); 
