@@ -49,7 +49,7 @@ int temp = 2;
 
 void printTime(int second);
 void printIdentity(int id);
-void tutor(int id);
+void tutor(int id, int num);
 void leave(int id);
  
 void* Threading(void* ptr) {
@@ -72,8 +72,8 @@ void* Threading(void* ptr) {
 		
 		if (id == sequence)
 		{
-			//cout<<pthread_self()<<": "<<id<<" vs "<<sequence<<endl;
-			if (data->numOfTutor<=60)//！！這個放這邊 ta 收尾麻煩！
+
+			if (data->numOfTutor<=60)
 			{
 				if ( id != 30 )										//Student
 				{
@@ -85,7 +85,7 @@ void* Threading(void* ptr) {
 					else if (me->questionTime == -1 && me->questionFrequency != 0)
 						me->questionTime = (rand()%21+10) + now; 	//not the first time asking.
 
-					//cout<<id<<" questionTime is "<<me->questionTime<<endl;
+
 					data->count[id]++;
 
 					if (me->questionTime == now)
@@ -93,9 +93,7 @@ void* Threading(void* ptr) {
 						if (data->tutoring == -1)//now don't have any one asking
 						{
 							data->tutoring = id;
-							//me->questionTime = 0;
-							//！突然想到，questionTime 的初始化得在問完問題再做！
-							//me->questionFrequency++;
+
 						}
 						else if (data->waiting.size()<3 )
 						{
@@ -103,9 +101,6 @@ void* Threading(void* ptr) {
 							temp.ID = id;
 							temp.arriveTime = now;
 							data->waiting.push_back(temp);
-							//me->questionTime = rand()%30 + 3*(data->waiting.size()+1) + now;
-							//！突然想到，questionTime 的初始化得在問完問題再做！
-							//現在就讓它停在 now 反正助教一定在這後面，下一次跑到這個 thead 一定已經跑過這一輪助教
 						}
 						else						//come back after 5 second.
 							me->questionTime += 5;
@@ -134,8 +129,6 @@ void* Threading(void* ptr) {
 							}
 						}
 							
-						//這裏做廁所時間 rand ％2來決定是否廁所
-						//好像得做一個開關先在助教沒空得排隊也
 					}
 					else
 					{
@@ -145,13 +138,8 @@ void* Threading(void* ptr) {
 							data->taWC = -1;
 							if (temp == 2 && data->tutoring!= -2)//The first second the student tutoring.
 							{
-								//跟下面重複想辦法合併
-								tutor(data->tutoring);
-								/*printTime(now);
-								cout<<"-Student";
-								printIdentity(data->tutoring);
-								cout<<": Asking--"<<data->numOfTutor<<endl;*/
 
+								tutor(data->tutoring, data->numOfTutor);
 								data->numOfTutor++;
 								temp--;
 							}
@@ -159,10 +147,6 @@ void* Threading(void* ptr) {
 								temp--;
 							else				//The thirsd second the student tutoring.
 							{
-								/*printTime(now);
-								cout<<"-Student";
-								printIdentity(data->tutoring);
-								cout<<": Exit to programming"<<endl;*/
 								if (data->tutoring != -2)
 								{
 									leave(data->tutoring);
@@ -184,11 +168,7 @@ void* Threading(void* ptr) {
 									vector<WaitingLine>::iterator it = data->waiting.begin();
 									data->waiting.erase(it);
 
-									tutor(data->tutoring);
-									/*printTime(now);
-									cout<<"-Student";
-									printIdentity(data->tutoring);
-									cout<<": Asking--"<<data->numOfTutor<<endl;*/
+									tutor(data->tutoring, data->numOfTutor);
 
 
 									data->numOfTutor++;
@@ -210,9 +190,7 @@ void* Threading(void* ptr) {
 									cout<<": Sitting #"<<i+1<<endl;
 								}
 					}
-					//int m = 0;
-					//cin>>m;
-					sleep(1);
+					//sleep(1);
 					now++;
 				}
 
@@ -221,18 +199,19 @@ void* Threading(void* ptr) {
 			{
 				if (id == 30)
 					{
-							/*printTime(now);
-							cout<<"-Student";
-							printIdentity(data->tutoring);
-							cout<<": Exit to programming"<<endl;*/
-							leave(id);
-							data->student[data->tutoring].questionFrequency++;
-							printTime(now);
-							cout<<"-TA: Exist."<<endl;
+						leave(data->tutoring);
+						data->student[data->tutoring].questionFrequency++;
+						printTime(now);
+						cout<<"-TA: Exist."<<endl;
 					}
+
+				if (sequence != 30)
+					sequence++;
+
 				pthread_mutex_unlock(&mut);
 				break;
 			}
+
 			if (sequence != 30)
 				sequence++;
 			else
@@ -242,9 +221,6 @@ void* Threading(void* ptr) {
 		pthread_mutex_unlock(&mut);
    	}
 
-   /*mutex1.lock();
-   cout<<id<<" : "<<data->count[id]<<", ask: "<<me->questionFrequency<<" times."<<endl;			//count how many time the thread be in lock
-   mutex1.unlock();*/
    return NULL;
 }
  
@@ -305,12 +281,12 @@ void printIdentity(int id)
 		cout<<id;
 }
 
-void tutor(int id)
+void tutor(int id, int numOfTutor)
 {
 	printTime(now);
 	cout<<"-Student";
 	printIdentity(id);
-	cout<<": Asking"<<endl;//<<data->numOfTutor<<endl;
+	cout<<": Asking ("<<numOfTutor<<")"<<endl;//<<data->numOfTutor<<endl;
 }
 
 void leave(int id)
